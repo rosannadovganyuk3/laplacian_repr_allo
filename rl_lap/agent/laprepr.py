@@ -247,6 +247,7 @@ class LapReprConfig(flag_tools.ConfigBase):
         flags.w_neg = 1.0
         flags.c_neg = 1.0
         flags.reg_neg = 0.0
+        flags.lambda_ = 1.0
         flags.replay_buffer_size = 100000
         flags.opt_args = flag_tools.Flags(name='Adam', lr=0.001)
         # train
@@ -308,6 +309,7 @@ class LapReprConfig(flag_tools.ConfigBase):
         args.w_neg = self._flags.w_neg
         args.c_neg = self._flags.c_neg
         args.reg_neg = self._flags.reg_neg
+        args.lambda_: self._flags.lambda_
         args.replay_buffer_size = self._flags.replay_buffer_size
         # training args
         args.log_dir = self._flags.log_dir
