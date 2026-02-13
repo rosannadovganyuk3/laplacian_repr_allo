@@ -29,6 +29,26 @@ def get_config_cls():
     config_cls = config_module.Config
     return config_cls
 
+def save_dual_discount_representations(learner, save_path):
+    """Save representations from a single batch"""
+    batch = learner._get_train_batch()
+
+        # extracts representations from the trained model
+        # conver to arrays (.cpu() needed for numpy arrrays)
+        # call repr_fn() to extract learned representations
+    with torch.no_grad():
+        reprs = {
+            's1_short': learner._repr_fn(batch.s1_short).cpu().numpy(),
+            's2_short': learner._repr_fn(batch.s2_short).cpu().numpy(),
+            's1_long': learner._repr_fn(batch.s1_long).cpu().numpy(),
+            's2_long': learner._repr_fn(batch.s2_long).cpu().numpy(),
+            's_neg': learner._repr_fn(batch.s_neg).cpu().numpy()
+        }
+    
+    save_file = os.path.join(save_path, 'dual_discount_representations.npz')
+    np.savez(save_file, **reprs)
+    print(f"Saved dual-discount representations to {save_file}")
+
 
 def main():
     timer = timer_tools.Timer()
@@ -49,6 +69,10 @@ def main():
     flag_tools.save_flags(cfg.flags, flags.log_dir)
     learner = laprepr.LapReprLearner(**cfg.args)
     learner.train()
+        
+    # save dual-discount representations after training
+    save_dual_discount_representations(learner, flags.log_dir)
+        
     print('Total time cost: {:.4g}s.'.format(timer.time_cost()))
 
 
