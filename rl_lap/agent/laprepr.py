@@ -74,6 +74,7 @@ class LapReprLearner:
             w_neg=1.0,
             c_neg=1.0,
             reg_neg=0.0,
+            lambda_ = 1.0, # controls how much weight to give the loss difference term to contribute to the total loss 
             replay_buffer_size=100000,
             # trainer args
             log_dir='/tmp/rl/log',
@@ -105,17 +106,35 @@ class LapReprLearner:
         self._optimizer = cfg.optimizer_factory(self._repr_fn.parameters())
 
     def _build_loss(self, batch):
-        s1 = batch.s1
-        s2 = batch.s2
+        # short-term discount pairs
+        s1_short = batch.s1_short
+        s2_short = batch.s2_short
+        s1_short_repr = self._repr_fn(s1_short)
+        s2_short_repr = self._repr_fn(s2_short)
+        loss_positive_short = pos_loss(s1_short_repr, s2_short_repr)
+
+        # long-term discount pairs
+        s1_long = batch.s1_long
+        s2_long = batch.s2_long
+        s1_long_repr = self._repr_fn(s1_long)
+        s2_long_repr = self._repr_fn(s2_long)
+        loss_positive_long = pos_loss(s1_long_repr, s2_long_repr)
+
+        # negative...
         s_neg = batch.s_neg
-        s1_repr = self._repr_fn(s1)
-        s2_repr = self._repr_fn(s2)
         s_neg_repr = self._repr_fn(s_neg)
-        loss_positive = pos_loss(s1_repr, s2_repr)
         loss_negative = neg_loss(s_neg_repr, c=self._c_neg, reg=self._reg_neg)
-        loss = loss_positive + self._w_neg * loss_negative
+
+        # minimize absolute difference between short-term and long-term losses
+        loss_diff = torch.abs(loss_postive_short - loss_positive_long)
+
+        # total loss
+        loss = loss_positive_short + loss_positive_long + self._w_neg * loss_negative + self._lambda_ * loss_diff
+        
         info = self._train_info
-        info['loss_pos'] = loss_positive.item()
+        info['loss_pos_short'] = loss_positive_short.item()
+        info['loss_pos_long'] = loss_positive_long.item()
+        info['loss_diff'] = loss_diff.item()
         info['loss_neg'] = loss_negative.item()
         info['loss_total'] = loss.item()
         return loss
@@ -134,13 +153,23 @@ class LapReprLearner:
     def _get_train_batch(self):
         s1, s2 = self._replay_buffer.sample_pairs(
                 batch_size=self._batch_size,
-                discount=self._discount,
+                discount=[0.9, 0.1], # short-term and long-term discounts
                 )
+        # s1 = (s1_short, s1_long), s2 = (s2_short, s2_long)
+
         s_neg = self._replay_buffer.sample_steps(self._batch_size)
-        s1, s2, s_neg = map(self._get_obs_batch, [s1, s2, s_neg])
+
+        # process each discount's batch seperately
+        s_neg = self._get_obs_batch(s_neg)
+        s1_short, s2_short, s_neg = map(self._get_obs_batch, [s1[0], s2[0]])
+        s1_long, s2_long, s_neg = map(self._get_obs_batch, [s1[1], s2[1]])
+
+        # create container object to organize all the batch data
         batch = flag_tools.Flags()
-        batch.s1 = self._tensor(s1)
-        batch.s2 = self._tensor(s2)
+        batch.s1_short = self._tensor(s1_short)
+        batch.s2_short = self._tensor(s2_short)
+        batch.s1_long = self._tensor(s1_long)
+        batch.s2_long = self._tensor(s2_long)
         batch.s_neg = self._tensor(s_neg)
         return batch
 
