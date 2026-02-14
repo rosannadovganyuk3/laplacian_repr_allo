@@ -309,7 +309,7 @@ class LapReprConfig(flag_tools.ConfigBase):
         args.w_neg = self._flags.w_neg
         args.c_neg = self._flags.c_neg
         args.reg_neg = self._flags.reg_neg
-        args.lambda_: self._flags.lambda_
+        args.lambda_ self._flags.lambda_
         args.replay_buffer_size = self._flags.replay_buffer_size
         # training args
         args.log_dir = self._flags.log_dir
