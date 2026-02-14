@@ -114,20 +114,51 @@ class EpisodicReplayBuffer:
             s2.append(self._episodes[epi_idx][step_idx + 1])
         return s1, s2
 
-    def sample_pairs(self, batch_size, discount=0.0):
+    def sample_pairs(self, batch_size, discount=[0.0,]):
+        # create two seperate arrays of elements applied with each discount factor
+        D1 = np.ones(batch_size) * discount[0] # batch_size elements, all discount[0]
+        D2 = np.ones(batch_size) * discount[1] # batch_size elements, all discount[1]
+        
+        # sample episodes and step indices 
         episode_indices = self._sample_episodes(batch_size)
-        step_ranges = self._gather_episode_lengths(episode_indices)
-        step1_indices = uniform_sampling(step_ranges - 1)
-        intervals = discounted_sampling(
-            step_ranges - step1_indices - 1, discount=discount) + 1
-        step2_indices = step1_indices + intervals
-        s1 = []
-        s2 = []
-        for epi_idx, step1_idx, step2_idx in zip(
-                episode_indices, step1_indices, step2_indices):
-            s1.append(self._episodes[epi_idx][step1_idx])
-            s2.append(self._episodes[epi_idx][step2_idx])
-        return s1, s2
+        episode_lengths = self._gather_episode_lengths(episode_indices)
+        step_indices = uniform_sampling(episode_lengths - 1)
+
+        # double everything to handle two discount factors 
+        repeated_episode_indices = np.concatenate([episode_indices, episode_indices])
+        repeated_episode_lengths = np.concatenate([episode_lengths, episode_lengths])
+        repeated_step_indices = np.concatenate([step_indices, step_indices])
+        repeated_possible_jumps = repeated_episode_lengths - repeated_step_indices - 1
+
+        # create an array with 2 * batch_size elements
+        jumps_all_discount = discounted_sampling(
+            repeated_possible_jumps, np.concatenate([D1, D2])) + 1
+        next_step_indices_all_discount = repeated_step_indices + jumps_all_discount
+        
+        # Obtain states
+        raw_s = [] # holds current states
+        raw_ns = [] # holds next states
+        for epi_idx, step_idx, next_step_idx in zip(
+                repeated_episode_indices, # which episode
+                repeated_step_indices, # starting step
+                next_step_indices_all_discount # ending step
+        ):
+            raw_s.append(self._episodes[epi_idx][step_idx]) # accesses specific episode and gets state at starting timestep
+            raw_ns.append(self._episodes[epi_idx][next_step_idx]) # accesses specific episode and gets state at next timestep
+
+        # Convert lists to arrays 
+        raw_s = np.array(raw_s)
+        raw_ns = np.array(raw_ns)
+
+        # Separate batches for different discounts
+        s = (raw_s[:batch_size], # batch for discount[0]
+             raw_s[batch_size:] # batch for discount[1]
+        )
+        ns = (raw_ns[:batch_size], # batch for discount[0]
+              raw_ns[batch_size:] # batch for discount[1]
+        )
+
+        return s, ns
 
     def _sample_episodes(self, batch_size):
         return np.random.randint(self._current_size, size=batch_size)
