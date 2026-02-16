@@ -15,7 +15,6 @@ class Config(laprepr.LapReprConfig):
         flags.w_neg = 1.0
         flags.c_neg = 1.0
         flags.reg_neg = 0.0
-        flags.lambda_ = 1.0
         flags.replay_buffer_size = 100000
         flags.opt_args.name = 'Adam'
         flags.opt_args.lr = 0.001

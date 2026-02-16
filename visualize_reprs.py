@@ -43,24 +43,77 @@ def get_config_cls():
     return config_cls
 
 
+def visualize_representation(model, states_batch, goal_state, pos_batch, goal_pos, 
+                            env, obs_prepro, device, output_dir, filename, title):
+    """Helper function to visualize one model's representations"""
+    # get representations from loaded model
+    states_torch = torch_tools.to_tensor(states_batch, device)
+    goal_torch = torch_tools.to_tensor(goal_state, device)
+    states_reprs = model(states_torch).detach().cpu().numpy()
+    goal_repr = model(goal_torch).detach().cpu().numpy()
+    
+    # compute l2 distances from states to goal
+    l2_dists = np.sqrt(np.sum(np.square(states_reprs - goal_repr), axis=-1))
+    
+    # -- visualize state representations --
+    # plot raw distances with the walls
+    goal_obs = env.task.pos_to_obs(goal_pos)
+    image_shape = goal_obs.agent.image.shape
+    map_ = np.zeros(image_shape[:2], dtype=np.float32)
+    map_[pos_batch[:, 0], pos_batch[:, 1]] = l2_dists
+    im_ = plt.imshow(map_, interpolation='none', cmap='Blues')
+    plt.colorbar()
+    
+    # add the walls to the normalized distance plot
+    walls = np.expand_dims(env.task.maze.render(), axis=-1)
+    map_2 = im_.cmap(im_.norm(map_))
+    map_2[:, :, :-1] = map_2[:, :, :-1] * (1 - walls) + 0.5 * walls
+    map_2[:, :, -1:] = map_2[:, :, -1:] * (1 - walls) + 1.0 * walls
+    map_2[goal_pos[0], goal_pos[1]] = [1, 0, 0, 1]
+    
+    plt.cla()
+    plt.imshow(map_2, interpolation='none')
+    plt.xticks([])
+    plt.yticks([])
+    plt.title(title)
+    
+    figfile = os.path.join(output_dir, f'{filename}.png')
+    plt.savefig(figfile, bbox_inches='tight')
+    plt.clf()
+    print(f"Saved visualization: {figfile}")
+
+
 def main():
     # setup log directories
     log_dir = os.path.join(FLAGS.log_base_dir, FLAGS.log_sub_dir)
     output_dir = os.path.join(FLAGS.log_base_dir, FLAGS.output_sub_dir)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
+
     # load config
     flags = flag_tools.load_flags(log_dir)
     cfg_cls = get_config_cls()
     cfg = cfg_cls(flags)
     learner_args = cfg.args_as_flags
     device = learner_args.device
-    # load model from checkpoint
-    model = learner_args.model_cfg.model_factory()
-    model.to(device=device)
-    ckpt_path = os.path.join(log_dir, 'model.ckpt')
-    model.load_state_dict(torch.load(ckpt_path))
-    # -- use loaded model to get state representations --
+
+    # load both models from checkpoints
+    model_short = learner_args.model_cfg.model_factory()
+    model_long = learner_args.model_cfg.model_factory()
+
+    model_short.to(device=device)
+    model_long.to(device=device)
+
+    ckpt_path_short = os.path.join(log_dir, 'model_short.ckpt')
+    ckpt_path_long = os.path.join(log_dir, 'model_long.ckpt')
+
+    model_short.load_state_dict(torch.load(ckpt_path_short))
+    model_long.load_state_dict(torch.load(ckpt_path_long))
+
+    print(f"Loaded short-term model from: {ckpt_path_short}")
+    print(f"Loaded long-term model from: {ckpt_path_long}")
+
+    # -- use loaded models to get state representations --
     # get the full batch of states from env
     env = learner_args.env_factory()
     obs_prepro = learner_args.obs_prepro
@@ -68,40 +121,31 @@ def main():
     pos_batch = env.task.maze.all_empty_grids()
     obs_batch = [env.task.pos_to_obs(pos_batch[i]) for i in range(n_states)]
     states_batch = np.array([obs_prepro(obs) for obs in obs_batch])
+
     # get goal state representation
     goal_pos = env.task.goal_pos
     goal_obs = env.task.pos_to_obs(goal_pos)
     goal_state = obs_prepro(goal_obs)[None]
-    # get representations from loaded model
-    states_torch = torch_tools.to_tensor(states_batch, device)
-    goal_torch = torch_tools.to_tensor(goal_state, device)
-    states_reprs = model(states_torch).detach().cpu().numpy()
-    goal_repr = model(goal_torch).detach().cpu().numpy()
-    # compute l2 distances from states to goal
-    l2_dists = np.sqrt(np.sum(np.square(states_reprs - goal_repr), axis=-1))
-    # -- visialize state representations --
-    # plot raw distances with the walls
-    image_shape = goal_obs.agent.image.shape
-    map_ = np.zeros(image_shape[:2], dtype=np.float32)
-    map_[pos_batch[:, 0], pos_batch[:, 1]] = l2_dists
-    im_ = plt.imshow(map_, interpolation='none', cmap='Blues')
-    plt.colorbar()
-    # add the walls to the normalized distance plot
-    walls = np.expand_dims(env.task.maze.render(), axis=-1)
-    map_2 = im_.cmap(im_.norm(map_))
-    map_2[:, :, :-1] = map_2[:, :, :-1] * (1 - walls) + 0.5 * walls
-    map_2[:, :, -1:] = map_2[:, :, -1:] * (1 - walls) + 1.0 * walls
-    map_2[goal_pos[0], goal_pos[1]] = [1, 0, 0, 1]
-    plt.cla()
-    plt.imshow(map_2, interpolation='none')
-    plt.xticks([])
-    plt.yticks([])
-    plt.title(flags.env_id)
-    figfile = os.path.join(output_dir, '{}.png'.format(flags.env_id))
-    plt.savefig(figfile, bbox_inches='tight')
-    plt.clf()
 
+    # -- get representations from loaded models --
+    # visualize short-term model
+    visualize_representation(
+        model_short, states_batch, goal_state, pos_batch, goal_pos,
+        env, obs_prepro, device, output_dir,
+        filename=f'{flags.env_id}_short_term',
+        title=f'{flags.env_id} - Short-term (discount=0.9)'
+    )
+
+    # visualize long-term model
+    visualize_representation(
+        model_long, states_batch, goal_state, pos_batch, goal_pos,
+        env, obs_prepro, device, output_dir,
+        filename=f'{flags.env_id}_long_term',
+        title=f'{flags.env_id} - Long-term (discount=0.1)'
+    )
+
+    print("\nVisualization complete!")
+    print(f"Output directory: {output_dir}")
 
 if __name__ == '__main__':
     main()
-

@@ -74,7 +74,7 @@ class LapReprLearner:
             w_neg=1.0,
             c_neg=1.0,
             reg_neg=0.0,
-            lambda_ = 1.0, # controls how much weight to give the loss difference term to contribute to the total loss 
+            #lambda_ = 1.0, # controls how much weight to give the loss difference term to contribute to the total loss 
             replay_buffer_size=100000,
             # trainer args
             log_dir='/tmp/rl/log',
@@ -97,47 +97,53 @@ class LapReprLearner:
         self._train_info = collections.OrderedDict()
 
     def _build_model(self):
-        cfg = self._model_cfg
-        self._repr_fn = cfg.model_factory()
-        self._repr_fn.to(device=self._device)
+        cfg = self._model_cfg # retrieves model config object
+        # model_factory() is a function defined in config that
+        # creates a ReprNetMLP instance
+        self._repr_fn_short = cfg.model_factory() # for short-term discount
+        self._repr_fn_long = cfg.model_factory() # for long-term discount
+
+        self._repr_fn_short.to(device=self._device)
+        self._repr_fn_long.to(device=self._device)
 
     def _build_optimizer(self):
         cfg = self._optimizer_cfg
-        self._optimizer = cfg.optimizer_factory(self._repr_fn.parameters())
+        self._optimizer_short = cfg.optimizer_factory(self._repr_fn_short.parameters())
+        self._optimizer_long = cfg.optimizer_factory(self._repr_fn_long.parameters())
 
     def _build_loss(self, batch):
-        # short-term discount pairs
-        s1_short = batch.s1_short
-        s2_short = batch.s2_short
-        s1_short_repr = self._repr_fn(s1_short)
-        s2_short_repr = self._repr_fn(s2_short)
+        # short-term model
+        s1_short_repr = self._repr_fn_short(batch.s1_short)
+        s2_short_repr = self._repr_fn_short(batch.s2_short)
         loss_positive_short = pos_loss(s1_short_repr, s2_short_repr)
 
-        # long-term discount pairs
-        s1_long = batch.s1_long
-        s2_long = batch.s2_long
-        s1_long_repr = self._repr_fn(s1_long)
-        s2_long_repr = self._repr_fn(s2_long)
+        # long-term model
+        s1_long_repr = self._repr_fn_long(batch.s1_long)
+        s2_long_repr = self._repr_fn_long(batch.s2_long)
         loss_positive_long = pos_loss(s1_long_repr, s2_long_repr)
 
-        # negative...
-        s_neg = batch.s_neg
-        s_neg_repr = self._repr_fn(s_neg)
-        loss_negative = neg_loss(s_neg_repr, c=self._c_neg, reg=self._reg_neg)
+        # retrieve representations (forward pass through model)
+        s_neg_repr_short = self._repr_fn_short(batch.s_neg)
+        s_neg_repr_long = self._repr_fn_long(batch.s_neg)
 
-        # minimize absolute difference between short-term and long-term losses
-        loss_diff = torch.abs(loss_postive_short - loss_positive_long)
+        # compute the loss from retrieved representations
+        loss_negative_short = neg_loss(s_neg_repr_short, c=self._c_neg, reg=self._reg_neg)
+        loss_negative_long = neg_loss(s_neg_repr_long, c=self._c_neg, reg=self._reg_neg)
 
         # total loss
-        loss = loss_positive_short + loss_positive_long + self._w_neg * loss_negative + self._lambda_ * loss_diff
+        loss_short = loss_positive_short + self._w_neg * loss_negative_short
+        loss_long = loss_negative_long + self._w_neg * loss_negative_long
+        loss_total = loss_short + loss_long
         
+        # track losses
         info = self._train_info
         info['loss_pos_short'] = loss_positive_short.item()
         info['loss_pos_long'] = loss_positive_long.item()
-        info['loss_diff'] = loss_diff.item()
-        info['loss_neg'] = loss_negative.item()
-        info['loss_total'] = loss.item()
-        return loss
+        info['loss_negative_short'] = loss_negative_short.item()
+        info['loss_negative_long'] = loss_negative_long.item()
+        info['loss_total'] = loss_total.item()
+
+        return loss_total
     
     def _random_policy_fn(self, state):
         return self._action_spec.sample(), None
@@ -171,15 +177,25 @@ class LapReprLearner:
         batch.s1_long = self._tensor(s1_long)
         batch.s2_long = self._tensor(s2_long)
         batch.s_neg = self._tensor(s_neg)
+
         return batch
 
     def _train_step(self):
         train_batch = self._get_train_batch()
         loss = self._build_loss(train_batch)
-        self._optimizer.zero_grad()
+
+        # update short-term model
+        self._optimizer_short.zero_grad() 
+        loss.backward(retain_graph=True) # keep graph for second backward pass
+        self._optimizer_short.step()
+        
+        # update long-term model
+        self._optimizer_long.zero_grad()
         loss.backward()
-        self._optimizer.step()
+        self._optimizer_long.step()
+
         self._global_step += 1
+        return loss
 
     def _print_train_info(self):
         summary_str = summary_tools.get_summary_str(
@@ -230,7 +246,11 @@ class LapReprLearner:
         logging.info('Training finished, time cost {:.4g}s.'.format(time_cost))
 
     def save_ckpt(self, filepath):
-        torch.save(self._repr_fn.state_dict(), filepath)
+        # two models need two seperate files
+        # need to save to a directory, not a single filena,e
+        # filepath is a directory path
+        torch.save(self._repr_fn_short.state_dict(), os.path.join(filepath, 'model_short.ckpt'))
+        torch.save(self._repr_fn_long.state_dict(), os.path.join(filepath, 'model_long.ckpt'))
 
 
 class LapReprConfig(flag_tools.ConfigBase):
@@ -247,7 +267,6 @@ class LapReprConfig(flag_tools.ConfigBase):
         flags.w_neg = 1.0
         flags.c_neg = 1.0
         flags.reg_neg = 0.0
-        flags.lambda_ = 1.0
         flags.replay_buffer_size = 100000
         flags.opt_args = flag_tools.Flags(name='Adam', lr=0.001)
         # train
@@ -309,7 +328,6 @@ class LapReprConfig(flag_tools.ConfigBase):
         args.w_neg = self._flags.w_neg
         args.c_neg = self._flags.c_neg
         args.reg_neg = self._flags.reg_neg
-        args.lambda_ self._flags.lambda_
         args.replay_buffer_size = self._flags.replay_buffer_size
         # training args
         args.log_dir = self._flags.log_dir
