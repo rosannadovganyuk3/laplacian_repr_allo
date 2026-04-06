@@ -1,9 +1,10 @@
 import os
 import argparse
 import importlib
+import torch
+import numpy as np
 
 from rl_lap.agent import laprepr
-
 from rl_lap.tools import flag_tools
 from rl_lap.tools import timer_tools
 from rl_lap.tools import logging_tools
@@ -37,18 +38,43 @@ def save_dual_discount_representations(learner, save_path):
         # conver to arrays (.cpu() needed for numpy arrrays)
         # call repr_fn() to extract learned representations
     with torch.no_grad():
+        # Get the raw tensors from the learner
+        z_short = learner._repr_fn_short(batch.s1_short)
+        z_long = learner._repr_fn_long(batch.s1_short)
+        
+        # Calculate Cosine Similarity
+        # dim=-1 compares the feature vectors for each state in the batch
+        cos_sim = torch.nn.functional.cosine_similarity(z_short, z_long, dim=-1).mean().item()
+
         reprs = {
-            's1_short': learner._repr_fn(batch.s1_short).cpu().numpy(),
-            's2_short': learner._repr_fn(batch.s2_short).cpu().numpy(),
-            's1_long': learner._repr_fn(batch.s1_long).cpu().numpy(),
-            's2_long': learner._repr_fn(batch.s2_long).cpu().numpy(),
-            's_neg': learner._repr_fn(batch.s_neg).cpu().numpy()
+            's1_short': z_short.cpu().numpy(),
+            's2_short': learner._repr_fn_short(batch.s2_short).cpu().numpy(),
+            's1_long': z_long.cpu().numpy(),
+            's2_long': learner._repr_fn_long(batch.s2_long).cpu().numpy(),
+            's_neg': learner._repr_fn_short(batch.s_neg).cpu().numpy()
         }
+
+    # Use the global step in the filename so you know WHEN this snapshot happened
+    step = learner._global_step
+    save_file = os.path.join(save_path, f'repr_snapshot_step_{step}.npz')
+    
+    np.savez(save_file, **reprs)
+    print(f"--- Snapshot at Step {step} ---")
+    print(f"Mean Cosine Similarity: {cos_sim:.4f}")
+    print(f"Saved to {save_file}")
+
+    '''
+    REMOVE 
+    # Save the similarity to a CSV for convergence plotting later
+    csv_path = os.path.join(save_path, 'repr_convergence.csv')
+    with open(csv_path, 'a') as f:
+        # We use learner.step or a similar counter if available
+        f.write(f"{cos_sim}\n")
     
     save_file = os.path.join(save_path, 'dual_discount_representations.npz')
     np.savez(save_file, **reprs)
     print(f"Saved dual-discount representations to {save_file}")
-
+    '''
 
 def main():
     timer = timer_tools.Timer()

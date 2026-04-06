@@ -73,7 +73,9 @@ class LapReprLearner:
             discount=0.0,
             w_neg=1.0,
             c_neg=1.0,
-            reg_neg=0.0,
+            reg_neg=0.1, #changed from 0 to 0.1 (value for neg_loss reg)
+            reg_start_step = 10000, # regularization start threshold
+            lagrange_mult=0.9, # changed from 1.0 to 0.1 -> now to 0.01
             #lambda_ = 1.0, # controls how much weight to give the loss difference term to contribute to the total loss 
             replay_buffer_size=100000,
             # trainer args
@@ -93,7 +95,7 @@ class LapReprLearner:
         self._build_optimizer()
         self._replay_buffer = episodic_replay_buffer.EpisodicReplayBuffer(
                 max_size=self._replay_buffer_size)
-        self._global_step = 0
+        self._global_step = 0 # tracks how many training steps have passed 
         self._train_info = collections.OrderedDict()
 
     def _build_model(self):
@@ -111,39 +113,66 @@ class LapReprLearner:
         self._optimizer_short = cfg.optimizer_factory(self._repr_fn_short.parameters())
         self._optimizer_long = cfg.optimizer_factory(self._repr_fn_long.parameters())
 
-    def _build_loss(self, batch):
+    def _build_loss(self, batch, use_reg=False):
+        # if use_reg is False, pass 0.0 so the neg_loss function skips the reg_part
+        current_reg = self._reg_neg if use_reg else 0.0
+
         # short-term model
         s1_short_repr = self._repr_fn_short(batch.s1_short)
         s2_short_repr = self._repr_fn_short(batch.s2_short)
+        s_neg_repr_short = self._repr_fn_short(batch.s_neg)
+
         loss_positive_short = pos_loss(s1_short_repr, s2_short_repr)
+        loss_negative_short = neg_loss(s_neg_repr_short, c=self._c_neg, reg=current_reg)
+        loss_short = loss_positive_short + self._w_neg * loss_negative_short
 
         # long-term model
         s1_long_repr = self._repr_fn_long(batch.s1_long)
         s2_long_repr = self._repr_fn_long(batch.s2_long)
-        loss_positive_long = pos_loss(s1_long_repr, s2_long_repr)
-
-        # retrieve representations (forward pass through model)
-        s_neg_repr_short = self._repr_fn_short(batch.s_neg)
         s_neg_repr_long = self._repr_fn_long(batch.s_neg)
 
-        # compute the loss from retrieved representations
-        loss_negative_short = neg_loss(s_neg_repr_short, c=self._c_neg, reg=self._reg_neg)
-        loss_negative_long = neg_loss(s_neg_repr_long, c=self._c_neg, reg=self._reg_neg)
-
-        # total loss
-        loss_short = loss_positive_short + self._w_neg * loss_negative_short
-        loss_long = loss_negative_long + self._w_neg * loss_negative_long
-        loss_total = loss_short + loss_long
+        loss_positive_long = pos_loss(s1_long_repr, s2_long_repr)
+        loss_negative_long = neg_loss(s_neg_repr_long, c=self._c_neg, reg=current_reg)
+        loss_long = loss_positive_long + self._w_neg * loss_negative_long
         
+        total_loss_short = loss_short 
+        total_loss_long = loss_long 
+        
+        # for use reg function
+        #s1_long_repr_short = self._repr_fn_long(batch.s1_short)
+        #dist = ((s1_long_repr_short - s1_short_repr)**2).sum()
+
+        # initialize reg_loss so it always exists
+        reg_loss = torch.tensor(0.0, device=self._device)
+
+        if use_reg:
+            # We use s1_short as the common ground
+            s1_short_repr_from_long = self._repr_fn_long(batch.s1_short)
+            # MSE
+            dist = torch.mean((s1_short_repr - s1_short_repr_from_long)**2)
+
+            # define lagrange multipler somewhere to start at 1.0
+            reg_loss = self._lagrange_mult * dist
+
+            # augment both losses
+            total_loss_short = loss_short + reg_loss
+            total_loss_long = loss_long + reg_loss
+
         # track losses
         info = self._train_info
         info['loss_pos_short'] = loss_positive_short.item()
         info['loss_pos_long'] = loss_positive_long.item()
         info['loss_negative_short'] = loss_negative_short.item()
         info['loss_negative_long'] = loss_negative_long.item()
-        info['loss_total'] = loss_total.item()
+        #info['loss_total'] = (loss_short + loss_long).item()
 
-        return loss_total
+        # track the alignment progress
+        info['loss_coupling'] = reg_loss.item() 
+
+        # reflect the actual values being optimized
+        info['loss_total'] = (total_loss_short + total_loss_long).item()
+
+        return total_loss_short, total_loss_long # return both seperately
     
     def _random_policy_fn(self, state):
         return self._action_spec.sample(), None
@@ -159,7 +188,7 @@ class LapReprLearner:
     def _get_train_batch(self):
         s1, s2 = self._replay_buffer.sample_pairs(
                 batch_size=self._batch_size,
-                discount=[0.9, 0.1], # short-term and long-term discounts
+                discount=[0.1, 0.9], # short-term and long-term discounts
                 )
         # s1 = (s1_short, s1_long), s2 = (s2_short, s2_long)
 
@@ -167,8 +196,8 @@ class LapReprLearner:
 
         # process each discount's batch seperately
         s_neg = self._get_obs_batch(s_neg)
-        s1_short, s2_short, s_neg = map(self._get_obs_batch, [s1[0], s2[0]])
-        s1_long, s2_long, s_neg = map(self._get_obs_batch, [s1[1], s2[1]])
+        s1_short, s2_short = map(self._get_obs_batch, [s1[0], s2[0]])
+        s1_long, s2_long = map(self._get_obs_batch, [s1[1], s2[1]])
 
         # create container object to organize all the batch data
         batch = flag_tools.Flags()
@@ -182,20 +211,50 @@ class LapReprLearner:
 
     def _train_step(self):
         train_batch = self._get_train_batch()
-        loss = self._build_loss(train_batch)
+
+        # determine whether to use regularization based on current step (threshold)
+        use_reg = self._global_step >= self._reg_start_step
+
+        if self._global_step == self._reg_start_step:
+            logging.info(f"--- REGULARIZATION ACTIVATED at step {self._global_step} ---")
+
+        loss_short, loss_long = self._build_loss(train_batch, use_reg=use_reg)
+
+        total_loss = loss_short + loss_long
+
+        # --- Calculate Cosine Similarity -------------
+        with torch.no_grad():
+            # Use s1_short as the common baseline for both encoders
+            phi_s = train_batch.s1_short
+            z_short = self._repr_fn_short(phi_s)
+            z_long = self._repr_fn_long(phi_s)
+            
+            # Calculate mean similarity across the batch
+            cos_sim = torch.nn.functional.cosine_similarity(z_short, z_long, dim=-1).mean().item()
+            
+            # Store it in train_info so it gets printed/logged
+            # Ensure it's available for the print function and the CSV
+            self._train_info['step'] = self._global_step
+            self._train_info['cos_sim'] = cos_sim
+            self._train_info['loss_s'] = loss_short.item()
+            self._train_info['loss_l'] = loss_long.item()
+        # ---------------------------------------------
 
         # update short-term model
         self._optimizer_short.zero_grad() 
-        loss.backward(retain_graph=True) # keep graph for second backward pass
-        self._optimizer_short.step()
+        self._optimizer_long.zero_grad()
+        #loss_short.backward() 
+    
+        total_loss.backward()
         
         # update long-term model
-        self._optimizer_long.zero_grad()
-        loss.backward()
+        
+        #loss_long.backward()
+        self._optimizer_short.step()
         self._optimizer_long.step()
 
         self._global_step += 1
-        return loss
+        return total_loss.item()
 
     def _print_train_info(self):
         summary_str = summary_tools.get_summary_str(
@@ -204,6 +263,14 @@ class LapReprLearner:
 
     def train(self):
         saver_dir = self._log_dir
+
+        # added to top of function
+        csv_path = os.path.join(saver_dir, 'repr_convergence.csv')
+
+        if os.path.exists(csv_path):
+            os.remove(csv_path)
+            logging.info(f"Deleted old CSV at {csv_path} to avoid format errors.")
+
         if not os.path.exists(saver_dir):
             os.makedirs(saver_dir)
         actor = actors.StepActor(self._env_factory)
@@ -240,17 +307,34 @@ class LapReprLearner:
                 logging.info('Training steps per second: {:.4g}.'
                         .format(steps_per_sec))
                 self._print_train_info()
+
+                # --- NEW LOGGING CODE ---
+                #csv_path = os.path.join(saver_dir, 'repr_convergence.csv')
+                # Check if file exists to write header on step 0
+                file_exists = os.path.isfile(csv_path)
+                with open(csv_path, 'a') as f:
+                    if not file_exists:
+                        f.write("step,loss_s,loss_l,cos_sim\n")
+                        #f.write("step,cosine_similarity\n")
+                    
+                    s = self._train_info
+                    f.write(f"{step+1},{s.get('loss_s', 0.0):.6f},{s.get('loss_l', 0.0):.6f},{s.get('cos_sim', 0.0):.6f}\n")
+                    # Get the value we calculated inside _train_step
+                    #sim_value = self._train_info.get('cosine_sim', 0.0)
+                    #f.write(f"{step+1},{sim_value}\n")
+                # ------------------------
+
         saver_path = os.path.join(saver_dir, 'model.ckpt')
         self.save_ckpt(saver_path)
         time_cost = timer.time_cost()
         logging.info('Training finished, time cost {:.4g}s.'.format(time_cost))
 
     def save_ckpt(self, filepath):
-        # two models need two seperate files
-        # need to save to a directory, not a single filena,e
-        # filepath is a directory path
-        torch.save(self._repr_fn_short.state_dict(), os.path.join(filepath, 'model_short.ckpt'))
-        torch.save(self._repr_fn_long.state_dict(), os.path.join(filepath, 'model_long.ckpt'))
+        # create files in the same directory as filepath
+        base_path = filepath.replace('.ckpt', '')
+    
+        torch.save(self._repr_fn_short.state_dict(), f'{base_path}_short.ckpt')
+        torch.save(self._repr_fn_long.state_dict(), f'{base_path}_long.ckpt')
 
 
 class LapReprConfig(flag_tools.ConfigBase):

@@ -42,7 +42,7 @@ def main():
         loaded_results = {}
         for r_mode in r_modes:
             log_dir = os.path.join(
-                    FLAGS.log_base_dir, 'dqn_repr', env_id, r_mode)
+                    FLAGS.log_base_dir, r_mode, env_id, 'test')
             results_file = os.path.join(log_dir, 'results.csv')
             results = np.loadtxt(results_file, delimiter=',')
             loaded_results[r_mode] = results

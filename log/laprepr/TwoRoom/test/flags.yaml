@@ -1,0 +1,19 @@
+batch_size: 128
+c_neg: 1.0
+d: 20
+device: cpu
+discount: 0.9
+env_id: TwoRoom
+lagrange_mult: 0.9
+log_dir: /Users/rosannadovganyuk/Documents/laplacian_repr_allo/log/laprepr/TwoRoom/test
+n_samples: 30000
+opt_args:
+  lr: 0.001
+  name: Adam
+print_freq: 1000
+reg_neg: 0.1
+reg_start_step: 10000
+replay_buffer_size: 100000
+save_freq: 10000
+total_train_steps: 50000
+w_neg: 5.0

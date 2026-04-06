@@ -21,16 +21,35 @@ def discounted_sampling(ranges, discount):
     to get the samples.
     """
     assert np.min(ranges) >= 1
-    assert discount >= 0 and discount <= 1
+    # convert discount to array
+    discount = np.asarray(discount)
+
+    # check bounds for array 
+    assert np.all(discount >= 0) and np.all(discount <=1), \
+        "Discount values must be between 0 and 1"
+
     seeds = np.random.uniform(size=ranges.shape)
-    if discount == 0:
-        samples = np.zeros_like(seeds, dtype=np.int64)
-    elif discount == 1:
-        samples = np.floor(seeds * ranges).astype(np.int64)
-    else:
-        samples = (np.log(1 - (1 - np.power(discount, ranges)) * seeds) 
-                / np.log(discount))
-        samples = np.floor(samples).astype(np.int64)
+
+    # handle element-wise comparison for arrays
+    samples = np.zeros_like(seeds, dtype=np.int64)
+    
+    # where discount == 0
+    mask_zero = (discount == 0)
+    samples[mask_zero] = 0
+    
+    # where discount == 1
+    mask_one = (discount == 1)
+    samples[mask_one] = np.floor(seeds[mask_one] * ranges[mask_one]).astype(np.int64)
+    
+    # where 0 < discount < 1
+    mask_mid = ~mask_zero & ~mask_one
+    if np.any(mask_mid):
+        samples[mask_mid] = (
+            np.log(1 - (1 - np.power(discount[mask_mid], ranges[mask_mid])) * seeds[mask_mid]) 
+            / np.log(discount[mask_mid])
+        )
+        samples[mask_mid] = np.floor(samples[mask_mid]).astype(np.int64)
+    
     return samples
 
 
@@ -147,8 +166,8 @@ class EpisodicReplayBuffer:
             raw_ns.append(self._episodes[epi_idx][next_step_idx]) # accesses specific episode and gets state at next timestep
 
         # Convert lists to arrays 
-        raw_s = np.array(raw_s)
-        raw_ns = np.array(raw_ns)
+        #raw_s = np.array(raw_s)
+        #raw_ns = np.array(raw_ns)
 
         # Separate batches for different discounts
         s = (raw_s[:batch_size], # batch for discount[0]
