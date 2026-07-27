@@ -127,3 +127,15 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+git rm --cached --quiet $(git ls-files | grep -E '\.(ckpt|npz)$')
+git rm --cached --quiet $(git ls-files | grep '\.DS_Store$')
+git status
+# macOS
+.DS_Store
+
+# local venv (not matched by the .venv/venv patterns above)
+myenv/
+
+# model weights and representation dumps — keep the CSVs, logs and flags
+log/**/*.ckpt
+log/**/*.npz

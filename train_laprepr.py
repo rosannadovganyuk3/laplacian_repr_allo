@@ -38,6 +38,26 @@ def save_dual_discount_representations(learner, save_path):
         # conver to arrays (.cpu() needed for numpy arrrays)
         # call repr_fn() to extract learned representations
     with torch.no_grad():
+        #######
+        # --- CRITICAL RNN FIX ---
+        # RNN expects (Batch, Seq, C, H, W). 
+        # If the batch states are only 4D, we must unsqueeze them.
+        s1_short = batch.s1_short
+        if s1_short.dim() == 4:
+            s1_short = s1_short.unsqueeze(1)
+            s2_short = batch.s2_short.unsqueeze(1)
+            s1_long = batch.s1_long.unsqueeze(1)
+            s2_long = batch.s2_long.unsqueeze(1)
+            s_neg = batch.s_neg.unsqueeze(1)
+        else:
+            s1_short = batch.s1_short
+            s2_short = batch.s2_short
+            s1_long = batch.s1_long
+            s2_long = batch.s2_long
+            s_neg = batch.s_neg
+
+        # Now pass the corrected tensors to the representation functions
+        #######
         # Get the raw tensors from the learner
         z_short = learner._repr_fn_short(batch.s1_short)
         z_long = learner._repr_fn_long(batch.s1_short)
@@ -63,8 +83,7 @@ def save_dual_discount_representations(learner, save_path):
     print(f"Mean Cosine Similarity: {cos_sim:.4f}")
     print(f"Saved to {save_file}")
 
-    '''
-    REMOVE 
+    
     # Save the similarity to a CSV for convergence plotting later
     csv_path = os.path.join(save_path, 'repr_convergence.csv')
     with open(csv_path, 'a') as f:
@@ -74,7 +93,7 @@ def save_dual_discount_representations(learner, save_path):
     save_file = os.path.join(save_path, 'dual_discount_representations.npz')
     np.savez(save_file, **reprs)
     print(f"Saved dual-discount representations to {save_file}")
-    '''
+    
 
 def main():
     timer = timer_tools.Timer()

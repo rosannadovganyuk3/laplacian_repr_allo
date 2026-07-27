@@ -146,8 +146,8 @@ class DqnReprAgentModel(nn.Module):
         self.q_fn_learning = q_model_factory()
         self.q_fn_target = q_model_factory()
         # create two distinct instance of repr
-        self.repr_fn_long = repr_model_factory()
-        self.repr_fn_short = repr_model_factory()
+        self.repr_fn_long = repr_model_factory() # Call 1: Creates one CNN
+        self.repr_fn_short = repr_model_factory() # Call 2: Creates a second, identical CNN
 
 
 class DqnReprAgentConfig(dqn_agent.DqnAgentConfig):

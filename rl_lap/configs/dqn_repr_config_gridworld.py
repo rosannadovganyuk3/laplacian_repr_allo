@@ -1,7 +1,7 @@
 import os
 import logging
 import torch
-
+import numpy as np
 from ..agent import dqn_repr_agent
 from ..envs.gridworld import gridworld_envs
 from . import networks
@@ -40,31 +40,38 @@ class Config(dqn_repr_agent.DqnReprAgentConfig):
         flags.repr_dim = 16 #lapreprlmp knows output size
 
     def _obs_prepro(self, obs):
-        # Gridworld specific: use agent position as the state
-        return obs.agent.position
+        # Must match the others: (H,W,C) -> (C,H,W) and normalize
+        img = obs.agent.image
+        img = np.transpose(img, (2, 0, 1)) 
+        return img.astype(np.float32) / 255.0
 
     def _goal_obs_prepro(self, obs):
-        # Gridworld specific: use goal position
-        return obs.goal.position
-
+        # If your goal also provides an image/grid representation:
+        img = obs.goal.image 
+        img = np.transpose(img, (2, 0, 1))
+        return img.astype(np.float32) / 255.0
+    
     def _env_factory(self):
         return gridworld_envs.make(self._flags.env_id)
 
     def _q_model_factory(self):
-        return networks.DiscreteQNetMLP(
-                input_shape=self._obs_shape, 
+        # Swap DiscreteQNetMLP for DiscreteQNetCNN
+        return networks.DiscreteQNetRNN(
+                input_shape=self._obs_shape, # This will now be (3, 5, 5)
                 n_actions=self._action_spec.n, 
-                n_layers=3, 
-                n_units=256)
+                n_layers=self._flags.n_layers, 
+                n_units=self._flags.n_units)
 
     def _repr_model_factory(self):
-        """Returns a factory function that creates a fresh Laplacian MLP."""
+        """Returns a factory function that creates a fresh Laplacian CNN."""
         # We return a lambda so the agent can call it twice: 
-        # once for 'short' and once for 'long'.
-        from ..agent import laprepr
-        return lambda: laprepr.LapReprMLP(
-            obs_spec=self._obs_shape, 
-            d=self._flags.repr_dim)
+        # once for 'short' and once for 'long';
+        # lets the agent create two identical CNNs.
+        return lambda: networks.ReprNetCNN(
+            input_shape=self._obs_shape, # Matches  networks.py
+            n_layers=self._flags.n_layers, 
+            n_units=self._flags.n_units,   
+            d=self._flags.repr_dim)    
 
     
 

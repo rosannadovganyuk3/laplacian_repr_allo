@@ -27,7 +27,7 @@ def plot_exact_box_style(window_size=30):
     all_csv_paths = []
     for root, _, files in os.walk("./log"):
         for file in files:
-            if file == "results.csv":
+            if file == "repr_convergence.csv":
                 all_csv_paths.append(os.path.join(root, file))
 
     for env in envs:
@@ -69,6 +69,7 @@ def plot_exact_box_style(window_size=30):
             # 3. AXIS LIMITS matching the box image
             ax.set_ylim(-0.6, 1.2) 
             ax.set_xlim(-1000, 31000)
+
             
             # 4. LEGEND: Bottom Right, Large, No Frame
             ax.legend(loc='lower right', fontsize=22, frameon=False)

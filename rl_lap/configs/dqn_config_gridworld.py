@@ -1,3 +1,4 @@
+import numpy as np
 from ..agent import dqn_agent
 from ..envs.gridworld import gridworld_envs
 from . import networks
@@ -30,16 +31,26 @@ class Config(dqn_agent.DqnAgentConfig):
         flags.n_test_episodes = 50
 
     def _obs_prepro(self, obs):
-        return obs.agent.position
+        """
+        Processes the 5x5x3 image for the CNN.
+        1. Extract the image.
+        2. Transpose from (H, W, C) to (C, H, W) for PyTorch.
+        3. Normalize pixels to [0, 1].
+        """
+        img = obs.agent.image # Access the 5x5x3 grid we created
+        # PyTorch Conv2d expects (Channels, Height, Width)
+        img = np.transpose(img, (2, 0, 1)) 
+        return img.astype(np.float32) / 255.0
 
     def _env_factory(self):
         return gridworld_envs.make(self._flags.env_id)
 
     def _q_model_factory(self):
-        return networks.DiscreteQNetMLP(
-                input_shape=self._obs_shape, 
+        # Swap DiscreteQNetMLP for DiscreteQNetRNN
+        return networks.DiscreteQNetRNN(
+                input_shape=self._obs_shape, # This will now be (3, 5, 5)
                 n_actions=self._action_spec.n, 
-                n_layers=3, 
-                n_units=256)
+                n_layers=self._flags.n_layers, 
+                n_units=self._flags.n_units)
 
 

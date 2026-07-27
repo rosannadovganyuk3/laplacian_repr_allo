@@ -69,13 +69,13 @@ class LapReprLearner:
             model_cfg=None,
             optimizer_cfg=None,
             n_samples=10000,
-            batch_size=128,
-            discount=0.0,
-            w_neg=1.0,
+            batch_size=256,
+            discount=0.9,
+            w_neg=15.0,
             c_neg=1.0,
             reg_neg=0.1, #changed from 0 to 0.1 (value for neg_loss reg)
-            reg_start_step = 10000, # regularization start threshold
-            lagrange_mult=0.9, # changed from 1.0 to 0.1 -> now to 0.01
+            reg_start_step = 0, # regularization start threshold
+            lagrange_mult=0.01, # changed from 1.0 to 0.1 -> now to 0.01
             #lambda_ = 1.0, # controls how much weight to give the loss difference term to contribute to the total loss 
             replay_buffer_size=100000,
             # trainer args
@@ -198,6 +198,17 @@ class LapReprLearner:
         s_neg = self._get_obs_batch(s_neg)
         s1_short, s2_short = map(self._get_obs_batch, [s1[0], s2[0]])
         s1_long, s2_long = map(self._get_obs_batch, [s1[1], s2[1]])
+
+        # must ensure tensors are 5D or the LSTM will crash
+        # --- RNN DIMENSION FIX ---
+        # If the buffer returns [Batch, C, H, W], we unsqueeze to [Batch, 1, C, H, W]
+        # Ensure everything is a 5D tensor for the RNN
+        def to_rnn_tensor(x):
+            t = self._tensor(x)
+            if t.dim() == 4:
+                return t.unsqueeze(1) # Add sequence dimension
+            return t
+        #####
 
         # create container object to organize all the batch data
         batch = flag_tools.Flags()

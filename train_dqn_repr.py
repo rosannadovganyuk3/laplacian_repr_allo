@@ -45,7 +45,7 @@ def main():
             FLAGS.exp_name,
             FLAGS.env_id,
             FLAGS.log_sub_dir)
-    flags.env_id = FLAGS.env_id
+    flags.env_id = FLAGS.env_idf
     flags.args = FLAGS.args
     
     # 2. Add Dual-Discount flags to the config

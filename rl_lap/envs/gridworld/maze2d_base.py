@@ -84,18 +84,43 @@ class Maze2DBase(env_base.Task):
 
     def get_observation(self):
         return self.pos_to_obs(self._agent_pos)
-
+    
     def pos_to_obs(self, pos):
-        # render a H*W*3 colored map
+        # 1. Define the window size (radius 2 = 5x5 window)
+        view_radius = 2
+        
+        # 2. Render the full map as a base
         binary_maze = self._maze.render()
         walls = np.outer(binary_maze.flatten(), np.array(WALL_COLOR))
         ground = np.outer(1-binary_maze.flatten(), np.array(GROUND_COLOR))
-        colored_maze = (walls + ground).reshape(
+        full_map = (walls + ground).reshape(
             [self._maze.height, self._maze.width, 3])
-        colored_maze[tuple(pos)] = np.array(AGENT_COLOR)
+        
+        # Add the agent to the full map before cropping
+        full_map[tuple(pos)] = np.array(AGENT_COLOR)
+
+        # 3. Pad the map to handle edges/corners
+        # We pad with WALL_COLOR (0,0,0) so the agent "sees" walls beyond the maze boundary
+        padded_map = np.pad(
+            full_map, 
+            ((view_radius, view_radius), (view_radius, view_radius), (0, 0)), 
+            mode='constant', 
+            constant_values=0
+        )
+
+        # 4. Crop the 5x5 window centered on the agent
+        adj_x, adj_y = pos[0] + view_radius, pos[1] + view_radius
+        local_view = padded_map[
+            adj_x - view_radius : adj_x + view_radius + 1,
+            adj_y - view_radius : adj_y + view_radius + 1,
+            :
+        ]
+
+        # 5. Maintain the original index for reference/logging
         pos_idx = one_hot(self._maze.pos_index(pos), self._maze.n_states)
+        
         return ObservationType(
-            image=colored_maze,
+            image=local_view, # This is now 5x5x3
             position=self.normalize_pos(pos),
             index=pos_idx)
 
