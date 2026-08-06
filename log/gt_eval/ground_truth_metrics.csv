@@ -1,0 +1,2 @@
+env,n_states,n_obs,max_alias,ceiling,overlap_short,overlap_long,overlap_cross,window_len,overlap_short_windowed,overlap_long_windowed,raw_cos,aligned_cos,erank_short,erank_long,rho_gt,rho_short,rho_long,rho_concat,rho_pixels
+HardMaze,148,126,5,0.8496,0.5296,0.3720,0.3434411,8,0.4769,0.2359,-0.0810,0.5804,7.7862,1.8169,0.3762,-0.0783,0.5803,0.0966,0.1034

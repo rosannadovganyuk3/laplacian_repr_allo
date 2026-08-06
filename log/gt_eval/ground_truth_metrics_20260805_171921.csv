@@ -1,0 +1,2 @@
+env,n_states,n_obs,max_alias,ceiling,overlap_alias_eig,overlap_short,overlap_long,overlap_cross,window_len,overlap_short_windowed,overlap_long_windowed,raw_cos,aligned_cos,erank_short,erank_long,rho_gt,rho_short,rho_long,rho_concat,rho_pixels
+OneRoom,225,25,121,0.2954,0.2953,0.2944,0.2949,0.9375203,8,0.3402,0.3888,0.9614,0.9756,11.8619,7.5166,0.0943,0.1706,0.4874,0.2090,0.7252

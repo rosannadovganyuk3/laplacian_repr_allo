@@ -1,0 +1,110 @@
+device: cuda.
+Start collecting samples.
+(10000/30000) steps collected.
+(20000/30000) steps collected.
+(30000/30000) steps collected.
+Data collection finished, time cost: 3.6034815311431885s
+--- REGULARIZATION ACTIVATED at step 0 ---
+Training steps per second: 0.
+Step 1; loss_pos_short 0.004302; loss_pos_long 0.004138; loss_negative_short 0.04781; loss_negative_long 0.04792; loss_coupling 2.515e-06; loss_total 0.1042; step 0; cos_sim 0.4118; mse 0.0503; norm_short 0.214; norm_long 0.1984; loss_s 0.05211; loss_l 0.05206; 
+Training steps per second: 30.08.
+Step 1000; loss_pos_short 4.464e-07; loss_pos_long 3.663e-07; loss_negative_short 0.04785; loss_negative_long 0.04785; loss_coupling 1.202e-06; loss_total 0.09571; step 999; cos_sim 0.7615; mse 0.02404; norm_short 0.2245; norm_long 0.2245; loss_s 0.04785; loss_l 0.04785; 
+Training steps per second: 30.08.
+Step 2000; loss_pos_short 2.434e-07; loss_pos_long 1.366e-07; loss_negative_short 0.04785; loss_negative_long 0.04785; loss_coupling 1.999e-07; loss_total 0.09571; step 1999; cos_sim 0.9603; mse 0.003997; norm_short 0.2242; norm_long 0.2245; loss_s 0.04785; loss_l 0.04785; 
+Training steps per second: 30.22.
+Step 3000; loss_pos_short 4.741e-07; loss_pos_long 2.051e-07; loss_negative_short 0.04785; loss_negative_long 0.04785; loss_coupling 1.442e-08; loss_total 0.09571; step 2999; cos_sim 0.9971; mse 0.0002884; norm_short 0.2247; norm_long 0.2245; loss_s 0.04785; loss_l 0.04785; 
+Training steps per second: 30.14.
+Step 4000; loss_pos_short 0.0004937; loss_pos_long 8.017e-08; loss_negative_short 0.04536; loss_negative_long 0.04785; loss_coupling 2.074e-06; loss_total 0.09371; step 3999; cos_sim 0.7724; mse 0.04149; norm_short 0.2984; norm_long 0.2243; loss_s 0.04585; loss_l 0.04785; 
+Training steps per second: 30.21.
+Step 5000; loss_pos_short 0.0006691; loss_pos_long 2.417e-07; loss_negative_short 0.0454; loss_negative_long 0.04785; loss_coupling 2.088e-06; loss_total 0.09393; step 4999; cos_sim 0.7751; mse 0.04176; norm_short 0.2991; norm_long 0.2245; loss_s 0.04607; loss_l 0.04785; 
+Training steps per second: 30.3.
+Step 6000; loss_pos_short 0.0006045; loss_pos_long 1.518e-07; loss_negative_short 0.0454; loss_negative_long 0.04785; loss_coupling 2.112e-06; loss_total 0.09386; step 5999; cos_sim 0.7706; mse 0.04225; norm_short 0.3006; norm_long 0.2243; loss_s 0.04601; loss_l 0.04785; 
+Training steps per second: 30.19.
+Step 7000; loss_pos_short 0.002639; loss_pos_long 1.156e-07; loss_negative_short 0.04102; loss_negative_long 0.04785; loss_coupling 5.866e-06; loss_total 0.09151; step 6999; cos_sim 0.6081; mse 0.1173; norm_short 0.393; norm_long 0.2247; loss_s 0.04366; loss_l 0.04785; 
+Training steps per second: 30.3.
+Step 8000; loss_pos_short 0.002018; loss_pos_long 1.018e-07; loss_negative_short 0.0405; loss_negative_long 0.04785; loss_coupling 6.409e-06; loss_total 0.09038; step 7999; cos_sim 0.5858; mse 0.1282; norm_short 0.408; norm_long 0.2242; loss_s 0.04252; loss_l 0.04785; 
+Training steps per second: 30.32.
+Step 9000; loss_pos_short 0.002105; loss_pos_long 0.001115; loss_negative_short 0.04058; loss_negative_long 0.0458; loss_coupling 4.259e-06; loss_total 0.08961; step 8999; cos_sim 0.7462; mse 0.08519; norm_short 0.398; norm_long 0.2749; loss_s 0.04269; loss_l 0.04692; 
+Training steps per second: 29.91.
+Step 10000; loss_pos_short 0.002115; loss_pos_long 0.0008612; loss_negative_short 0.04085; loss_negative_long 0.04555; loss_coupling 4.251e-06; loss_total 0.08938; step 9999; cos_sim 0.7381; mse 0.08502; norm_short 0.3981; norm_long 0.2811; loss_s 0.04296; loss_l 0.04641; 
+Training steps per second: 29.63.
+Step 11000; loss_pos_short 0.001794; loss_pos_long 0.001142; loss_negative_short 0.04078; loss_negative_long 0.04568; loss_coupling 4.066e-06; loss_total 0.0894; step 10999; cos_sim 0.7496; mse 0.08133; norm_short 0.3918; norm_long 0.2764; loss_s 0.04258; loss_l 0.04682; 
+Training steps per second: 29.66.
+Step 12000; loss_pos_short 0.002623; loss_pos_long 0.0006249; loss_negative_short 0.03977; loss_negative_long 0.04548; loss_coupling 5.118e-06; loss_total 0.0885; step 11999; cos_sim 0.718; mse 0.1024; norm_short 0.4185; norm_long 0.2822; loss_s 0.04239; loss_l 0.04611; 
+Training steps per second: 29.66.
+Step 13000; loss_pos_short 0.00327; loss_pos_long 0.001046; loss_negative_short 0.04011; loss_negative_long 0.0457; loss_coupling 4.474e-06; loss_total 0.09013; step 12999; cos_sim 0.7354; mse 0.08949; norm_short 0.4045; norm_long 0.2768; loss_s 0.04338; loss_l 0.04675; 
+Training steps per second: 29.55.
+Step 14000; loss_pos_short 0.00379; loss_pos_long 0.001277; loss_negative_short 0.03966; loss_negative_long 0.04548; loss_coupling 4.79e-06; loss_total 0.09021; step 13999; cos_sim 0.7238; mse 0.09581; norm_short 0.4159; norm_long 0.2837; loss_s 0.04345; loss_l 0.04675; 
+Training steps per second: 29.68.
+Step 15000; loss_pos_short 0.002661; loss_pos_long 0.001415; loss_negative_short 0.03995; loss_negative_long 0.04569; loss_coupling 4.49e-06; loss_total 0.08972; step 14999; cos_sim 0.7357; mse 0.0898; norm_short 0.4066; norm_long 0.2776; loss_s 0.04261; loss_l 0.04711; 
+Training steps per second: 29.63.
+Step 16000; loss_pos_short 0.002388; loss_pos_long 0.0008146; loss_negative_short 0.03967; loss_negative_long 0.04541; loss_coupling 4.695e-06; loss_total 0.08828; step 15999; cos_sim 0.7286; mse 0.09391; norm_short 0.4131; norm_long 0.2803; loss_s 0.04206; loss_l 0.04622; 
+Training steps per second: 29.67.
+Step 17000; loss_pos_short 0.002975; loss_pos_long 0.001424; loss_negative_short 0.03962; loss_negative_long 0.04565; loss_coupling 5.02e-06; loss_total 0.08968; step 16999; cos_sim 0.7177; mse 0.1004; norm_short 0.4193; norm_long 0.2835; loss_s 0.0426; loss_l 0.04708; 
+Training steps per second: 29.61.
+Step 18000; loss_pos_short 0.00312; loss_pos_long 0.002335; loss_negative_short 0.03817; loss_negative_long 0.04483; loss_coupling 6.415e-06; loss_total 0.08846; step 17999; cos_sim 0.6174; mse 0.1283; norm_short 0.435; norm_long 0.3011; loss_s 0.04129; loss_l 0.04716; 
+Training steps per second: 29.58.
+Step 19000; loss_pos_short 0.004628; loss_pos_long 0.002131; loss_negative_short 0.03775; loss_negative_long 0.04458; loss_coupling 6.669e-06; loss_total 0.0891; step 18999; cos_sim 0.5933; mse 0.1334; norm_short 0.4312; norm_long 0.3056; loss_s 0.04238; loss_l 0.04671; 
+Training steps per second: 29.68.
+Step 20000; loss_pos_short 0.003685; loss_pos_long 0.001615; loss_negative_short 0.0381; loss_negative_long 0.04432; loss_coupling 7.72e-06; loss_total 0.08773; step 19999; cos_sim 0.5527; mse 0.1544; norm_short 0.4465; norm_long 0.3098; loss_s 0.04179; loss_l 0.04594; 
+Training steps per second: 29.53.
+Step 21000; loss_pos_short 0.0048; loss_pos_long 0.001826; loss_negative_short 0.0363; loss_negative_long 0.04409; loss_coupling 8.025e-06; loss_total 0.08702; step 20999; cos_sim 0.5693; mse 0.1605; norm_short 0.4633; norm_long 0.3123; loss_s 0.0411; loss_l 0.04591; 
+Training steps per second: 29.68.
+Step 22000; loss_pos_short 0.004104; loss_pos_long 0.001583; loss_negative_short 0.03721; loss_negative_long 0.04447; loss_coupling 7.528e-06; loss_total 0.08737; step 21999; cos_sim 0.578; mse 0.1506; norm_short 0.4484; norm_long 0.3089; loss_s 0.04131; loss_l 0.04605; 
+Training steps per second: 29.58.
+Step 23000; loss_pos_short 0.004539; loss_pos_long 0.002272; loss_negative_short 0.03686; loss_negative_long 0.04403; loss_coupling 7.887e-06; loss_total 0.08771; step 22999; cos_sim 0.5726; mse 0.1577; norm_short 0.4535; norm_long 0.3063; loss_s 0.0414; loss_l 0.0463; 
+Training steps per second: 29.77.
+Step 24000; loss_pos_short 0.004255; loss_pos_long 0.002377; loss_negative_short 0.03622; loss_negative_long 0.04403; loss_coupling 8.754e-06; loss_total 0.08689; step 23999; cos_sim 0.5714; mse 0.1751; norm_short 0.4776; norm_long 0.3192; loss_s 0.04048; loss_l 0.04641; 
+Training steps per second: 29.56.
+Step 25000; loss_pos_short 0.003246; loss_pos_long 0.001409; loss_negative_short 0.03574; loss_negative_long 0.0441; loss_coupling 8.313e-06; loss_total 0.0845; step 24999; cos_sim 0.5725; mse 0.1663; norm_short 0.4643; norm_long 0.3036; loss_s 0.03899; loss_l 0.0455; 
+Training steps per second: 29.7.
+Step 26000; loss_pos_short 0.004841; loss_pos_long 0.001804; loss_negative_short 0.0344; loss_negative_long 0.04409; loss_coupling 9.761e-06; loss_total 0.08515; step 25999; cos_sim 0.5146; mse 0.1952; norm_short 0.4843; norm_long 0.3028; loss_s 0.03924; loss_l 0.0459; 
+Training steps per second: 29.56.
+Step 27000; loss_pos_short 0.005573; loss_pos_long 0.001762; loss_negative_short 0.03479; loss_negative_long 0.04409; loss_coupling 9.587e-06; loss_total 0.08623; step 26999; cos_sim 0.5427; mse 0.1917; norm_short 0.4911; norm_long 0.3134; loss_s 0.04036; loss_l 0.04585; 
+Training steps per second: 29.5.
+Step 28000; loss_pos_short 0.003725; loss_pos_long 0.003069; loss_negative_short 0.03476; loss_negative_long 0.04389; loss_coupling 9.851e-06; loss_total 0.08546; step 27999; cos_sim 0.5362; mse 0.197; norm_short 0.4981; norm_long 0.3191; loss_s 0.03849; loss_l 0.04696; 
+Training steps per second: 29.67.
+Step 29000; loss_pos_short 0.003957; loss_pos_long 0.002462; loss_negative_short 0.03452; loss_negative_long 0.04399; loss_coupling 9.938e-06; loss_total 0.08493; step 28999; cos_sim 0.5358; mse 0.1988; norm_short 0.4922; norm_long 0.3078; loss_s 0.03847; loss_l 0.04645; 
+Training steps per second: 29.51.
+Step 30000; loss_pos_short 0.004195; loss_pos_long 0.002621; loss_negative_short 0.03345; loss_negative_long 0.04389; loss_coupling 1.202e-05; loss_total 0.08416; step 29999; cos_sim 0.519; mse 0.2404; norm_short 0.5389; norm_long 0.3236; loss_s 0.03764; loss_l 0.04651; 
+Training steps per second: 29.74.
+Step 31000; loss_pos_short 0.004198; loss_pos_long 0.003461; loss_negative_short 0.03197; loss_negative_long 0.0438; loss_coupling 1.178e-05; loss_total 0.08343; step 30999; cos_sim 0.5267; mse 0.2357; norm_short 0.5249; norm_long 0.32; loss_s 0.03616; loss_l 0.04726; 
+Training steps per second: 29.6.
+Step 32000; loss_pos_short 0.007445; loss_pos_long 0.002089; loss_negative_short 0.03247; loss_negative_long 0.04384; loss_coupling 1.125e-05; loss_total 0.08586; step 31999; cos_sim 0.5253; mse 0.2251; norm_short 0.5176; norm_long 0.3165; loss_s 0.03992; loss_l 0.04593; 
+Training steps per second: 29.71.
+Step 33000; loss_pos_short 0.004389; loss_pos_long 0.002697; loss_negative_short 0.03364; loss_negative_long 0.04362; loss_coupling 1.272e-05; loss_total 0.08436; step 32999; cos_sim 0.5198; mse 0.2545; norm_short 0.5471; norm_long 0.326; loss_s 0.03803; loss_l 0.04632; 
+Training steps per second: 29.56.
+Step 34000; loss_pos_short 0.003773; loss_pos_long 0.001926; loss_negative_short 0.03136; loss_negative_long 0.04351; loss_coupling 1.247e-05; loss_total 0.08059; step 33999; cos_sim 0.4913; mse 0.2494; norm_short 0.5345; norm_long 0.3222; loss_s 0.03514; loss_l 0.04544; 
+Training steps per second: 29.6.
+Step 35000; loss_pos_short 0.00492; loss_pos_long 0.002498; loss_negative_short 0.03153; loss_negative_long 0.04373; loss_coupling 1.282e-05; loss_total 0.0827; step 34999; cos_sim 0.5127; mse 0.2564; norm_short 0.5413; norm_long 0.3198; loss_s 0.03645; loss_l 0.04623; 
+Training steps per second: 29.65.
+Step 36000; loss_pos_short 0.00431; loss_pos_long 0.002055; loss_negative_short 0.03172; loss_negative_long 0.04384; loss_coupling 1.356e-05; loss_total 0.08194; step 35999; cos_sim 0.4841; mse 0.2713; norm_short 0.5561; norm_long 0.33; loss_s 0.03603; loss_l 0.0459; 
+Training steps per second: 29.6.
+Step 37000; loss_pos_short 0.01018; loss_pos_long 0.001937; loss_negative_short 0.03178; loss_negative_long 0.0435; loss_coupling 1.22e-05; loss_total 0.08741; step 36999; cos_sim 0.518; mse 0.244; norm_short 0.5405; norm_long 0.3322; loss_s 0.04196; loss_l 0.04544; 
+Training steps per second: 29.71.
+Step 38000; loss_pos_short 0.003821; loss_pos_long 0.002802; loss_negative_short 0.0317; loss_negative_long 0.04353; loss_coupling 1.284e-05; loss_total 0.08186; step 37999; cos_sim 0.5013; mse 0.2568; norm_short 0.5432; norm_long 0.3261; loss_s 0.03552; loss_l 0.04633; 
+Training steps per second: 29.63.
+Step 39000; loss_pos_short 0.004987; loss_pos_long 0.002288; loss_negative_short 0.02893; loss_negative_long 0.04342; loss_coupling 1.415e-05; loss_total 0.07964; step 38999; cos_sim 0.4985; mse 0.283; norm_short 0.5598; norm_long 0.3302; loss_s 0.03391; loss_l 0.04571; 
+Training steps per second: 29.7.
+Step 40000; loss_pos_short 0.005578; loss_pos_long 0.002275; loss_negative_short 0.02888; loss_negative_long 0.0434; loss_coupling 1.549e-05; loss_total 0.08014; step 39999; cos_sim 0.4778; mse 0.3098; norm_short 0.5799; norm_long 0.3321; loss_s 0.03445; loss_l 0.04567; 
+Training steps per second: 29.63.
+Step 41000; loss_pos_short 0.008096; loss_pos_long 0.002823; loss_negative_short 0.02902; loss_negative_long 0.04332; loss_coupling 1.498e-05; loss_total 0.08328; step 40999; cos_sim 0.4863; mse 0.2995; norm_short 0.5793; norm_long 0.3408; loss_s 0.03712; loss_l 0.04615; 
+Training steps per second: 29.59.
+Step 42000; loss_pos_short 0.005626; loss_pos_long 0.0018; loss_negative_short 0.0282; loss_negative_long 0.04338; loss_coupling 1.485e-05; loss_total 0.07902; step 41999; cos_sim 0.4888; mse 0.297; norm_short 0.5767; norm_long 0.3289; loss_s 0.03383; loss_l 0.04518; 
+Training steps per second: 29.75.
+Step 43000; loss_pos_short 0.005862; loss_pos_long 0.002357; loss_negative_short 0.02796; loss_negative_long 0.04348; loss_coupling 1.472e-05; loss_total 0.07967; step 42999; cos_sim 0.4841; mse 0.2944; norm_short 0.574; norm_long 0.3285; loss_s 0.03382; loss_l 0.04584; 
+Training steps per second: 29.65.
+Step 44000; loss_pos_short 0.007252; loss_pos_long 0.002352; loss_negative_short 0.02855; loss_negative_long 0.04361; loss_coupling 1.439e-05; loss_total 0.08178; step 43999; cos_sim 0.4907; mse 0.2878; norm_short 0.5674; norm_long 0.3287; loss_s 0.03581; loss_l 0.04596; 
+Training steps per second: 29.62.
+Step 45000; loss_pos_short 0.004096; loss_pos_long 0.002685; loss_negative_short 0.02933; loss_negative_long 0.04329; loss_coupling 1.617e-05; loss_total 0.07941; step 44999; cos_sim 0.4817; mse 0.3235; norm_short 0.5892; norm_long 0.3318; loss_s 0.03342; loss_l 0.04597; 
+Training steps per second: 29.57.
+Step 46000; loss_pos_short 0.00375; loss_pos_long 0.001874; loss_negative_short 0.02816; loss_negative_long 0.04334; loss_coupling 1.714e-05; loss_total 0.07715; step 45999; cos_sim 0.4897; mse 0.3428; norm_short 0.6155; norm_long 0.3426; loss_s 0.03191; loss_l 0.04521; 
+Training steps per second: 29.7.
+Step 47000; loss_pos_short 0.005093; loss_pos_long 0.002404; loss_negative_short 0.02866; loss_negative_long 0.04339; loss_coupling 1.414e-05; loss_total 0.07956; step 46999; cos_sim 0.489; mse 0.2829; norm_short 0.5662; norm_long 0.3246; loss_s 0.03375; loss_l 0.04579; 
+Training steps per second: 29.51.
+Step 48000; loss_pos_short 0.001713; loss_pos_long 0.001874; loss_negative_short 0.02891; loss_negative_long 0.04349; loss_coupling 1.517e-05; loss_total 0.076; step 47999; cos_sim 0.4943; mse 0.3035; norm_short 0.5789; norm_long 0.3355; loss_s 0.03063; loss_l 0.04536; 
+Training steps per second: 29.57.
+Step 49000; loss_pos_short 0.005649; loss_pos_long 0.001984; loss_negative_short 0.02902; loss_negative_long 0.0433; loss_coupling 1.677e-05; loss_total 0.07998; step 48999; cos_sim 0.4674; mse 0.3354; norm_short 0.6012; norm_long 0.3292; loss_s 0.03467; loss_l 0.04529; 
+Training steps per second: 29.66.
+Step 50000; loss_pos_short 0.003864; loss_pos_long 0.001977; loss_negative_short 0.0298; loss_negative_long 0.04335; loss_coupling 1.587e-05; loss_total 0.07901; step 49999; cos_sim 0.4933; mse 0.3175; norm_short 0.6059; norm_long 0.3442; loss_s 0.03366; loss_l 0.04533; 
+Training finished, time cost 1686s.

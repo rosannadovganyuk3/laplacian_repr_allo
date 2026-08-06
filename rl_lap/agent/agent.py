@@ -179,7 +179,7 @@ class Agent:
             if (step + 1) % self._replay_update_freq == 0:
                 steps = actor.get_steps(self._replay_update_num,
                         self._train_policy_fn)
-            self._replay_buffer.add_steps(steps)
+                self._replay_buffer.add_steps(steps)
             # save
             if (step + 1) % self._save_freq == 0:
                 saver_path = os.path.join(log_dir, 

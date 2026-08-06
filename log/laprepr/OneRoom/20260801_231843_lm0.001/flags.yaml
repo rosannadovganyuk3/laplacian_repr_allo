@@ -1,0 +1,22 @@
+batch_size: 256
+c_neg: 1.0
+d: 20
+device: cuda
+discount: 0.9
+env_id: OneRoom
+lagrange_mult: 0.001
+log_dir: /home/rdovgany/laplacian_repr_allo/log/laprepr/OneRoom/20260801_231843_lm0.001
+n_layers: 2
+n_samples: 30000
+n_units: 256
+opt_args:
+  lr: 0.0003
+  name: Adam
+print_freq: 1000
+reg_neg: 0.1
+reg_start_step: 0
+replay_buffer_size: 100000
+save_freq: 10000
+total_train_steps: 50000
+w_neg: 5.0
+window_len: 8

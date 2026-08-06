@@ -1,0 +1,16 @@
+device: cuda.
+Start collecting samples.
+(10000/200000) steps collected.
+(20000/200000) steps collected.
+(30000/200000) steps collected.
+(40000/200000) steps collected.
+(50000/200000) steps collected.
+(60000/200000) steps collected.
+(70000/200000) steps collected.
+(80000/200000) steps collected.
+(90000/200000) steps collected.
+(100000/200000) steps collected.
+(110000/200000) steps collected.
+(120000/200000) steps collected.
+(130000/200000) steps collected.
+(140000/200000) steps collected.

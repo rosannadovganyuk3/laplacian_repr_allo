@@ -40,16 +40,18 @@ class Config(dqn_repr_agent.DqnReprAgentConfig):
         flags.repr_dim = 16 #lapreprlmp knows output size
 
     def _obs_prepro(self, obs):
-        # Must match the others: (H,W,C) -> (C,H,W) and normalize
+        # Must match the others: (H,W,C) -> (C,H,W).
+        # pos_to_obs already builds the image from colour constants in [0, 1],
+        # so no further normalization is needed here.
         img = obs.agent.image
-        img = np.transpose(img, (2, 0, 1)) 
-        return img.astype(np.float32) / 255.0
+        img = np.transpose(img, (2, 0, 1))
+        return img.astype(np.float32)
 
     def _goal_obs_prepro(self, obs):
         # If your goal also provides an image/grid representation:
-        img = obs.goal.image 
+        img = obs.goal.image
         img = np.transpose(img, (2, 0, 1))
-        return img.astype(np.float32) / 255.0
+        return img.astype(np.float32)
     
     def _env_factory(self):
         return gridworld_envs.make(self._flags.env_id)

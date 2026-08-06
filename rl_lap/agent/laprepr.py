@@ -70,13 +70,14 @@ class LapReprLearner:
             optimizer_cfg=None,
             n_samples=10000,
             batch_size=256,
-            discount=0.9,
+            discount=(0.1, 0.9),
             w_neg=15.0,
             c_neg=1.0,
             reg_neg=0.1, #changed from 0 to 0.1 (value for neg_loss reg)
             reg_start_step = 0, # regularization start threshold
             lagrange_mult=0.01, # changed from 1.0 to 0.1 -> now to 0.01
-            #lambda_ = 1.0, # controls how much weight to give the loss difference term to contribute to the total loss 
+            #lambda_ = 1.0, # controls how much weight to give the loss difference term to contribute to the total loss
+            window_len=8, # frames of history fed to the encoder per sampled state
             replay_buffer_size=100000,
             # trainer args
             log_dir='/tmp/rl/log',
@@ -134,13 +135,6 @@ class LapReprLearner:
         loss_positive_long = pos_loss(s1_long_repr, s2_long_repr)
         loss_negative_long = neg_loss(s_neg_repr_long, c=self._c_neg, reg=current_reg)
         loss_long = loss_positive_long + self._w_neg * loss_negative_long
-        
-        total_loss_short = loss_short 
-        total_loss_long = loss_long 
-        
-        # for use reg function
-        #s1_long_repr_short = self._repr_fn_long(batch.s1_short)
-        #dist = ((s1_long_repr_short - s1_short_repr)**2).sum()
 
         # initialize reg_loss so it always exists
         reg_loss = torch.tensor(0.0, device=self._device)
@@ -152,11 +146,9 @@ class LapReprLearner:
             dist = torch.mean((s1_short_repr - s1_short_repr_from_long)**2)
 
             # define lagrange multipler somewhere to start at 1.0
+            # applied once to the joint objective (not once per branch,
+            # otherwise summing loss_short + loss_long double-counts it)
             reg_loss = self._lagrange_mult * dist
-
-            # augment both losses
-            total_loss_short = loss_short + reg_loss
-            total_loss_long = loss_long + reg_loss
 
         # track losses
         info = self._train_info
@@ -164,23 +156,31 @@ class LapReprLearner:
         info['loss_pos_long'] = loss_positive_long.item()
         info['loss_negative_short'] = loss_negative_short.item()
         info['loss_negative_long'] = loss_negative_long.item()
-        #info['loss_total'] = (loss_short + loss_long).item()
 
         # track the alignment progress
-        info['loss_coupling'] = reg_loss.item() 
+        info['loss_coupling'] = reg_loss.item()
 
-        # reflect the actual values being optimized
-        info['loss_total'] = (total_loss_short + total_loss_long).item()
+        # reflect the actual value being optimized
+        info['loss_total'] = (loss_short + loss_long + reg_loss).item()
 
-        return total_loss_short, total_loss_long # return both seperately
+        return loss_short, loss_long, reg_loss
     
     def _random_policy_fn(self, state):
         return self._action_spec.sample(), None
 
     def _get_obs_batch(self, steps):
-        obs_batch = [self._obs_prepro(s.step.time_step.observation)
-                for s in steps]
-        return np.stack(obs_batch, axis=0)
+        # Each element of `steps` is either a single EpisodicStep (window_len<=1)
+        # or a list of window_len EpisodicSteps (history leading up to it).
+        # Either way, build a genuine (T, C, H, W) sequence per sample so the
+        # encoder gets real history instead of a synthetic unsqueezed T=1 frame.
+        def _to_seq(s):
+            window = s if isinstance(s, list) else [s]
+            return np.stack(
+                    [self._obs_prepro(es.step.time_step.observation)
+                        for es in window],
+                    axis=0)
+        obs_batch = [_to_seq(s) for s in steps]
+        return np.stack(obs_batch, axis=0)  # (B, T, C, H, W)
 
     def _tensor(self, x):
         return torch_tools.to_tensor(x, self._device)
@@ -188,27 +188,18 @@ class LapReprLearner:
     def _get_train_batch(self):
         s1, s2 = self._replay_buffer.sample_pairs(
                 batch_size=self._batch_size,
-                discount=[0.1, 0.9], # short-term and long-term discounts
+                discount=self._discount, # short-term and long-term discounts
+                window_len=self._window_len,
                 )
         # s1 = (s1_short, s1_long), s2 = (s2_short, s2_long)
 
-        s_neg = self._replay_buffer.sample_steps(self._batch_size)
+        s_neg = self._replay_buffer.sample_steps(
+                self._batch_size, window_len=self._window_len)
 
         # process each discount's batch seperately
         s_neg = self._get_obs_batch(s_neg)
         s1_short, s2_short = map(self._get_obs_batch, [s1[0], s2[0]])
         s1_long, s2_long = map(self._get_obs_batch, [s1[1], s2[1]])
-
-        # must ensure tensors are 5D or the LSTM will crash
-        # --- RNN DIMENSION FIX ---
-        # If the buffer returns [Batch, C, H, W], we unsqueeze to [Batch, 1, C, H, W]
-        # Ensure everything is a 5D tensor for the RNN
-        def to_rnn_tensor(x):
-            t = self._tensor(x)
-            if t.dim() == 4:
-                return t.unsqueeze(1) # Add sequence dimension
-            return t
-        #####
 
         # create container object to organize all the batch data
         batch = flag_tools.Flags()
@@ -229,9 +220,9 @@ class LapReprLearner:
         if self._global_step == self._reg_start_step:
             logging.info(f"--- REGULARIZATION ACTIVATED at step {self._global_step} ---")
 
-        loss_short, loss_long = self._build_loss(train_batch, use_reg=use_reg)
+        loss_short, loss_long, reg_loss = self._build_loss(train_batch, use_reg=use_reg)
 
-        total_loss = loss_short + loss_long
+        total_loss = loss_short + loss_long + reg_loss
 
         # --- Calculate Cosine Similarity -------------
         with torch.no_grad():
@@ -242,11 +233,25 @@ class LapReprLearner:
             
             # Calculate mean similarity across the batch
             cos_sim = torch.nn.functional.cosine_similarity(z_short, z_long, dim=-1).mean().item()
-            
+
+            # Complementary to cos_sim: raw squared distance and per-vector
+            # norms. GDO only constrains E[phi phi^T] in aggregate, not any
+            # single state's vector norm, so cos_sim can be unstable for
+            # small-norm vectors -- two vectors near the origin can have
+            # cos_sim close to -1 while still being close together in
+            # absolute terms. mse catches that directly; the norms let you
+            # tell whether small-norm instability is actually happening.
+            mse = l2_dist(z_short, z_long).mean().item()
+            norm_short = z_short.norm(dim=-1).mean().item()
+            norm_long = z_long.norm(dim=-1).mean().item()
+
             # Store it in train_info so it gets printed/logged
             # Ensure it's available for the print function and the CSV
             self._train_info['step'] = self._global_step
             self._train_info['cos_sim'] = cos_sim
+            self._train_info['mse'] = mse
+            self._train_info['norm_short'] = norm_short
+            self._train_info['norm_long'] = norm_long
             self._train_info['loss_s'] = loss_short.item()
             self._train_info['loss_l'] = loss_long.item()
         # ---------------------------------------------
@@ -325,11 +330,12 @@ class LapReprLearner:
                 file_exists = os.path.isfile(csv_path)
                 with open(csv_path, 'a') as f:
                     if not file_exists:
-                        f.write("step,loss_s,loss_l,cos_sim\n")
-                        #f.write("step,cosine_similarity\n")
-                    
+                        f.write("step,loss_s,loss_l,cos_sim,mse,norm_short,norm_long\n")
+
                     s = self._train_info
-                    f.write(f"{step+1},{s.get('loss_s', 0.0):.6f},{s.get('loss_l', 0.0):.6f},{s.get('cos_sim', 0.0):.6f}\n")
+                    f.write(f"{step+1},{s.get('loss_s', 0.0):.6f},{s.get('loss_l', 0.0):.6f},"
+                            f"{s.get('cos_sim', 0.0):.6f},{s.get('mse', 0.0):.6f},"
+                            f"{s.get('norm_short', 0.0):.6f},{s.get('norm_long', 0.0):.6f}\n")
                     # Get the value we calculated inside _train_step
                     #sim_value = self._train_info.get('cosine_sim', 0.0)
                     #f.write(f"{step+1},{sim_value}\n")
@@ -358,10 +364,13 @@ class LapReprConfig(flag_tools.ConfigBase):
         flags.d = 20
         flags.n_samples = 10000
         flags.batch_size = 128
-        flags.discount = 0.9
+        flags.discount = [0.1, 0.9]
         flags.w_neg = 1.0
         flags.c_neg = 1.0
         flags.reg_neg = 0.0
+        flags.reg_start_step = 0
+        flags.lagrange_mult = 0.01
+        flags.window_len = 8
         flags.replay_buffer_size = 100000
         flags.opt_args = flag_tools.Flags(name='Adam', lr=0.001)
         # train
@@ -423,6 +432,9 @@ class LapReprConfig(flag_tools.ConfigBase):
         args.w_neg = self._flags.w_neg
         args.c_neg = self._flags.c_neg
         args.reg_neg = self._flags.reg_neg
+        args.reg_start_step = self._flags.reg_start_step
+        args.lagrange_mult = self._flags.lagrange_mult
+        args.window_len = self._flags.window_len
         args.replay_buffer_size = self._flags.replay_buffer_size
         # training args
         args.log_dir = self._flags.log_dir

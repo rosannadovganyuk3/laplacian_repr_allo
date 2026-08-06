@@ -113,27 +113,41 @@ class EpisodicReplayBuffer:
                 self._episode_buffer = []
                 self._r = 0.0
 
-    def sample_steps(self, batch_size):
+    def _get_window(self, epi_idx, step_idx, window_len):
+        """Trailing window of window_len steps ending at step_idx, left-padded by
+        repeating the first available step near the start of the episode."""
+        episode = self._episodes[epi_idx]
+        return [episode[max(step_idx - window_len + 1 + i, 0)]
+                for i in range(window_len)]
+
+    def _sample_state(self, epi_idx, step_idx, window_len):
+        """A single EpisodicStep when window_len <= 1 (backward compatible with
+        every existing caller), or a window_len-long trailing window otherwise."""
+        if window_len <= 1:
+            return self._episodes[epi_idx][step_idx]
+        return self._get_window(epi_idx, step_idx, window_len)
+
+    def sample_steps(self, batch_size, window_len=1):
         episode_indices = self._sample_episodes(batch_size)
         step_ranges = self._gather_episode_lengths(episode_indices)
         step_indices = uniform_sampling(step_ranges)
         s = []
         for epi_idx, step_idx in zip(episode_indices, step_indices):
-            s.append(self._episodes[epi_idx][step_idx])
+            s.append(self._sample_state(epi_idx, step_idx, window_len))
         return s
 
-    def sample_transitions(self, batch_size):
+    def sample_transitions(self, batch_size, window_len=1):
         episode_indices = self._sample_episodes(batch_size)
         step_ranges = self._gather_episode_lengths(episode_indices)
         step_indices = uniform_sampling(step_ranges - 1)
         s1 = []
         s2 = []
         for epi_idx, step_idx in zip(episode_indices, step_indices):
-            s1.append(self._episodes[epi_idx][step_idx])
-            s2.append(self._episodes[epi_idx][step_idx + 1])
+            s1.append(self._sample_state(epi_idx, step_idx, window_len))
+            s2.append(self._sample_state(epi_idx, step_idx + 1, window_len))
         return s1, s2
 
-    def sample_pairs(self, batch_size, discount=[0.0,]):
+    def sample_pairs(self, batch_size, discount=[0.1, 0.9], window_len=1):
         # create two seperate arrays of elements applied with each discount factor
         D1 = np.ones(batch_size) * discount[0] # batch_size elements, all discount[0]
         D2 = np.ones(batch_size) * discount[1] # batch_size elements, all discount[1]
@@ -162,10 +176,11 @@ class EpisodicReplayBuffer:
                 repeated_step_indices, # starting step
                 next_step_indices_all_discount # ending step
         ):
-            raw_s.append(self._episodes[epi_idx][step_idx]) # accesses specific episode and gets state at starting timestep
+            # current state gets history; the discount-jumped target stays a single frame
+            raw_s.append(self._sample_state(epi_idx, step_idx, window_len))  # accesses specific episode and gets state at starting timestep
             raw_ns.append(self._episodes[epi_idx][next_step_idx]) # accesses specific episode and gets state at next timestep
 
-        # Convert lists to arrays 
+        # Convert lists to arrays
         #raw_s = np.array(raw_s)
         #raw_ns = np.array(raw_ns)
 

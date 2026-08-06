@@ -1,0 +1,10 @@
+device: mps.
+Start collecting samples.
+(500/500) steps collected.
+Data collection finished, time cost: 0.03338217735290527s
+--- REGULARIZATION ACTIVATED at step 0 ---
+Training steps per second: 0.
+Step 1; loss_pos_short 0.002854; loss_pos_long 0.001624; loss_negative_short 0.04794; loss_negative_long 0.04822; loss_coupling 0; loss_total 1.447; step 0; cos_sim 0.4591; mse 0.03922; norm_short 0.2019; norm_long 0.1765; loss_s 0.722; loss_l 0.7249; 
+Training steps per second: 18.55.
+Step 5; loss_pos_short 0.0006159; loss_pos_long 0.0009528; loss_negative_short 0.0479; loss_negative_long 0.0479; loss_coupling 0; loss_total 1.438; step 4; cos_sim 0.5145; mse 0.0422; norm_short 0.208; norm_long 0.2089; loss_s 0.7191; loss_l 0.7194; 
+Training finished, time cost 0.5094s.

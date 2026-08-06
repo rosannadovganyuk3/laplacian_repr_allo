@@ -1,0 +1,25 @@
+batch_size: 256
+c_neg: 2.0
+d: 20
+device: cuda
+discount:
+- 0.1
+- 0.9
+env_id: TwoRoom
+lagrange_mult: 0
+log_dir: /home/rdovgany/laplacian_repr_allo/log/laprepr/TwoRoom/20260805_165613
+n_layers: 3
+n_samples: 200000
+n_units: 256
+opt_args:
+  lr: 0.0001
+  name: Adam
+print_freq: 1000
+reg_neg: 0.1
+reg_start_step: 0
+replay_buffer_size: 200000
+rnn_type: LSTM
+save_freq: 10000
+total_train_steps: 200000
+w_neg: 15.0
+window_len: 8

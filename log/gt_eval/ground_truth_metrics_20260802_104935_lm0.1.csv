@@ -1,0 +1,4 @@
+env,n_states,n_obs,max_alias,ceiling,overlap_short,overlap_long,overlap_cross,window_len,overlap_short_windowed,overlap_long_windowed,raw_cos,aligned_cos,erank_short,erank_long,rho_gt,rho_short,rho_long,rho_concat,rho_pixels
+OneRoom,225,25,121,0.2954,0.2907,0.2916,0.8392622,8,0.2907,0.2841,0.7798,0.6534,9.5242,2.0517,0.0943,0.0521,0.7284,0.1355,0.7252
+TwoRoom,212,61,66,0.4895,0.3946,0.3636,0.59919703,8,0.3866,0.3399,0.6864,0.5340,13.5977,1.4132,0.2189,0.2448,0.2531,0.2237,0.2949
+HardMaze,148,126,5,0.8496,0.6092,0.5408,0.56806636,8,0.5727,0.4726,0.7094,0.6712,10.2870,2.5684,0.3762,0.0650,0.6291,0.1429,0.1034

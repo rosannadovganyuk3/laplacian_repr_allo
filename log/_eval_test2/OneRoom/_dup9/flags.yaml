@@ -1,0 +1,25 @@
+batch_size: 256
+c_neg: 1.0
+d: 20
+device: mps
+discount:
+- 0.1
+- 0.9
+env_id: OneRoom
+lagrange_mult: 0
+log_dir: /Users/rosannadovganyuk/Documents/laplacian_repr_allo/log/_eval_test2/OneRoom/_dup9
+n_layers: 3
+n_samples: 500
+n_units: 256
+opt_args:
+  lr: 0.0003
+  name: Adam
+print_freq: 5
+reg_neg: 0.1
+reg_start_step: 0
+replay_buffer_size: 500
+rnn_type: LSTM
+save_freq: 1000000
+total_train_steps: 5
+w_neg: 15.0
+window_len: 8
